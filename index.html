@@ -333,6 +333,10 @@ function drawMaletin(x,y,pulse){
   ctx.fillStyle=C.briefcase; ctx.fillRect(-24,-14,48,34); ctx.fillStyle='#2A1508'; ctx.fillRect(-22,-12,44,30);
   ctx.fillStyle=C.briefcaseGold; ctx.fillRect(-7,-3,14,8); ctx.fillStyle='#FFF8DC'; ctx.fillRect(-5,-1,10,4);
   ctx.fillStyle=C.briefcaseGold; ctx.fillRect(-28,-6,4,12); ctx.fillRect(24,-6,4,12);
+  // Signo sol peruano
+  ctx.fillStyle=C.briefcaseGold;
+  ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('S/.',0,8);
   ctx.restore();
 }
 function drawEscandalo(x,y,ang){
@@ -676,19 +680,19 @@ document.getElementById('btn-skip').addEventListener('click', ()=>{ hideNameOver
 
 // ── HUD ──────────────────────────────────────────────
 function drawHUD() {
-  ptext(fmt(G.time),GW/2,22,24,C.gold);
-  ptext('TIEMPO EN EL CARGO',GW/2,38,9.5,'#ccc');
-  ptext(`${G.score}pts`,GW-22,22,12,C.white,'right');
+  ptext(fmt(G.time),GW/2,24,30,C.gold);
+  ptext('TIEMPO EN EL CARGO',GW/2,44,12,'#ccc');
+  ptext(`${G.score}pts`,GW-18,24,15,C.white,'right');
   const nextElec=((Math.ceil(G.level/5)*5)-G.level);
-  ptext(nextElec<=1?'⚡ELEC!':nextElec===0?'⚡ELEC!': `ELEC-${nextElec}`,28,22,9.5,nextElec<=1?'#FF8844':'#FFAA00','left');
-  const bx=18,by=GH-32,bw=GW-36,bh=20;
-  ptext('APROBACIÓN:',GW/2,by-14,10,C.white);
+  ptext(nextElec<=1?'⚡ELEC!':nextElec===0?'⚡ELEC!':`ELEC-${nextElec}`,22,24,12,nextElec<=1?'#FF8844':'#FFAA00','left');
+  const bx=18,by=GH-34,bw=GW-36,bh=22;
+  ptext('APROBACIÓN:',GW/2,by-16,13,C.white);
   ctx.fillStyle='#222'; ctx.fillRect(bx,by,bw,bh);
   const bc=G.approval>60?'#00CC55':G.approval>30?'#FFAA00':C.red;
   ctx.fillStyle=bc; ctx.fillRect(bx,by,(G.approval/100)*bw,bh);
   ctx.fillStyle='rgba(0,0,0,0.25)'; for(let i=1;i<10;i++) ctx.fillRect(bx+(bw/10)*i,by,1,bh);
   ctx.strokeStyle=C.gold; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
-  ptext(`${Math.ceil(G.approval)}%`,GW/2,by+bh/2,11,C.white);
+  ptext(`${Math.ceil(G.approval)}%`,GW/2,by+bh/2,13,C.white);
   // Tweet warning flash
   if(G.tweetWarningTimer>0){
     const a=G.tweetWarningTimer/1.2*0.35;
@@ -825,7 +829,7 @@ function loop(ts) {
   } else if(G.state==='gameover'){
     updateShake(dt);
     drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
-    drawGameOver()
+    drawGameOver();
   }
   ctx.restore();
   requestAnimationFrame(loop);
@@ -833,4 +837,4 @@ function loop(ts) {
 requestAnimationFrame(t=>{ last=t; requestAnimationFrame(loop); });
 </script>
 </body>
-</html>>
+</html>
