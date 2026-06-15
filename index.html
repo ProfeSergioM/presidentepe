@@ -826,3 +826,11 @@ function loop(ts) {
     updateShake(dt);
     drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
     drawGameOver()
+  }
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(t=>{ last=t; requestAnimationFrame(loop); });
+</script>
+</body>
+</html>>
