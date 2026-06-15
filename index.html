@@ -795,7 +795,6 @@ function drawGameOver() {
   }
 }
 
-// ── MAIN LOOP ────────────────────────────────────────
 let last=0;
 function loop(ts) {
   const dt=Math.min((ts-last)/1000,0.1); last=ts;
@@ -803,6 +802,10 @@ function loop(ts) {
 
   if(G.state==='menu'){
     drawMenu();
+  } else if(G.state==='election_confirm'){
+    updateShake(dt); updateParticles(dt);
+    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
+    drawElectionConfirm(); drawParticles();
   } else if(G.state==='playing'){
     G.time+=dt;
     updateDifficulty(); updateShake(dt); updateTweetTimer(dt);
@@ -813,9 +816,7 @@ function loop(ts) {
       if(G.level>=7&&Math.random()<0.35) spawnEntity();
     }
     updateEntities(dt); updateParticles(dt); updateFloats(dt);
-    drawOffice();
-    drawDesk(DESK_X,DESK_Y);
-    drawPresident(DESK_X,DESK_Y-28,G.presJitter);
+    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,G.presJitter);
     for(const e of G.entities){
       ctx.save();
       if(e.type==='protesta')       drawProtesta(e.x,e.y,e.wobble);
@@ -823,7 +824,6 @@ function loop(ts) {
       else if(e.type==='maletin')   drawMaletin(e.x,e.y,1+Math.sin(e.wt*2)*0.06);
       else if(e.type==='escandalo') drawEscandalo(e.x,e.y,e.wobble);
       else if(e.type==='tweet')     drawTweet(e.x,e.y,e.wt);
-      // tap hint circle — smaller for tweet to reflect its small target
       ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.arc(e.x,e.y,e.r+16,0,Math.PI*2); ctx.stroke();
       ctx.restore();

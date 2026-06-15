@@ -513,19 +513,64 @@ function updateTweetTimer(dt) {
 // ── ELECTIONS ────────────────────────────────────────
 function triggerElection() {
   if(G.state!=='playing') return;
-  G.state='election';
-  G.electionRound++;
+  // Primero mostrar pantalla de confirmación
+  G.state='election_confirm';
   G.entities.length=0; floats.length=0;
+  G.electionRound++;
   const r=G.electionRound;
-  G.election={
-    round:r, pos:8, dir:1,
-    speed:   80+r*34,              // 114, 148, 182, 216, 250…
-    threshold:50+(r-1)*4,          // 50,  54,  58,  62,  66…
-    bounces:0,
-    maxBounces:Math.max(2,6-Math.floor((r-1)/2)), // 6,6,5,5,4,4,3,3,2,2…
-    voted:false, result:null, resultTimer:0, trail:[],
+  // Pre-calcular parámetros para mostrarlos en el aviso
+  G.electionNext={
+    round:r,
+    speed:   80+r*34,
+    threshold:50+(r-1)*4,
+    maxBounces:Math.max(2,6-Math.floor((r-1)/2)),
   };
   tone(330,0.2,'square',0.3); tone(440,0.3,'square',0.3,0.2);
+}
+
+function startElection() {
+  const n=G.electionNext;
+  G.state='election';
+  G.election={
+    round:n.round, pos:8, dir:1,
+    speed:n.speed, threshold:n.threshold,
+    bounces:0, maxBounces:n.maxBounces,
+    voted:false, result:null, resultTimer:0, trail:[],
+  };
+}
+
+function drawElectionConfirm() {
+  const n=G.electionNext;
+  // Fondo oscuro sobre la oficina
+  ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(0,0,GW,GH);
+
+  // Panel central
+  ctx.fillStyle='#08021a'; ctx.fillRect(20,100,GW-40,GH-200);
+  ctx.strokeStyle=C.gold; ctx.lineWidth=3; ctx.strokeRect(20,100,GW-40,GH-200);
+  ctx.fillStyle=C.red; ctx.fillRect(20,100,GW-40,20);
+
+  ptext('🗳️ ¡ELECCIONES! 🗳️', GW/2, 110, 15, C.white);
+  ptext(`RONDA ${n.round}`, GW/2, 150, 22, C.gold);
+
+  // Instrucciones del gauge
+  ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fillRect(36,170,GW-72,120);
+  ptext('¿CÓMO FUNCIONA?', GW/2, 190, 12, C.gold);
+  ptext('Un marcador se mueve de lado', GW/2, 215, 11, C.white);
+  ptext('a lado. Toca cuando esté en', GW/2, 233, 11, C.white);
+  ptext('la zona VERDE para ganar.', GW/2, 251, 11, C.white);
+  ptext(`Necesitas superar el ${n.threshold}%`, GW/2, 275, 12, '#FFAA00');
+  ptext(`${n.maxBounces} rebotes antes del tiempo`, GW/2, 295, 10, '#888');
+
+  // Botón LISTO — bien separado del resto
+  const pulse=0.97+Math.sin(Date.now()/300)*0.03;
+  ctx.save(); ctx.translate(GW/2, GH-148); ctx.scale(pulse,pulse);
+  ctx.fillStyle='#006622'; ctx.fillRect(-110,-30,220,60);
+  ctx.strokeStyle='#00FF88'; ctx.lineWidth=3; ctx.strokeRect(-110,-30,220,60);
+  ctx.restore();
+  ptext('✔  ¡LISTO! COMENZAR', GW/2, GH-148, 15, C.white);
+
+  // Info tiempo actual
+  ptext(`Llevas ${fmt(G.time)} en el poder`, GW/2, GH-88, 10, '#666');
 }
 
 function updateElection(dt) {
@@ -619,6 +664,11 @@ function handleTap(cx,cy) {
   if(G.state==='menu'){
     // Solo iniciar si toca el botón "TOCA PARA EMPEZAR" (centrado en y=410, 210×48px)
     if(gx>GW/2-105 && gx<GW/2+105 && gy>386 && gy<434) startGame();
+    return;
+  }
+  if(G.state==='election_confirm'){
+    // Solo el botón LISTO (centrado en y=GH-148, 220×60px)
+    if(gx>GW/2-110&&gx<GW/2+110&&gy>GH-178&&gy<GH-118) startElection();
     return;
   }
   if(G.state==='election'){ if(!G.election.voted) voteElection(); return; }
@@ -795,7 +845,6 @@ function drawGameOver() {
   }
 }
 
-// ── MAIN LOOP ────────────────────────────────────────
 let last=0;
 function loop(ts) {
   const dt=Math.min((ts-last)/1000,0.1); last=ts;
@@ -803,6 +852,10 @@ function loop(ts) {
 
   if(G.state==='menu'){
     drawMenu();
+  } else if(G.state==='election_confirm'){
+    updateShake(dt); updateParticles(dt);
+    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
+    drawElectionConfirm(); drawParticles();
   } else if(G.state==='playing'){
     G.time+=dt;
     updateDifficulty(); updateShake(dt); updateTweetTimer(dt);
@@ -813,9 +866,7 @@ function loop(ts) {
       if(G.level>=7&&Math.random()<0.35) spawnEntity();
     }
     updateEntities(dt); updateParticles(dt); updateFloats(dt);
-    drawOffice();
-    drawDesk(DESK_X,DESK_Y);
-    drawPresident(DESK_X,DESK_Y-28,G.presJitter);
+    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,G.presJitter);
     for(const e of G.entities){
       ctx.save();
       if(e.type==='protesta')       drawProtesta(e.x,e.y,e.wobble);
@@ -823,7 +874,6 @@ function loop(ts) {
       else if(e.type==='maletin')   drawMaletin(e.x,e.y,1+Math.sin(e.wt*2)*0.06);
       else if(e.type==='escandalo') drawEscandalo(e.x,e.y,e.wobble);
       else if(e.type==='tweet')     drawTweet(e.x,e.y,e.wt);
-      // tap hint circle — smaller for tweet to reflect its small target
       ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.arc(e.x,e.y,e.r+16,0,Math.PI*2); ctx.stroke();
       ctx.restore();
