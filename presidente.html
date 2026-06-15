@@ -606,7 +606,11 @@ function drawElection() {
 function handleTap(cx,cy) {
   const rect=canvas.getBoundingClientRect();
   const gx=(cx-rect.left)/scale, gy=(cy-rect.top)/scale;
-  if(G.state==='menu'){ startGame(); return; }
+  if(G.state==='menu'){
+    // Solo iniciar si toca el botón "TOCA PARA EMPEZAR" (centrado en y=410, 210×48px)
+    if(gx>GW/2-105 && gx<GW/2+105 && gy>386 && gy<434) startGame();
+    return;
+  }
   if(G.state==='election'){ if(!G.election.voted) voteElection(); return; }
   if(G.state==='gameover'&&G.goPhase==='board'){
     if(gx>GW/2-95&&gx<GW/2+95&&gy>GH-108&&gy<GH-68) restartGame();

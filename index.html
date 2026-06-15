@@ -50,7 +50,6 @@ canvas { display:block; image-rendering:pixelated; image-rendering:crisp-edges; 
 #btn-save { font-size:13px; padding:10px 22px; background:#D91023; color:#fff; }
 #btn-skip { font-size:11px; padding:7px 16px; background:#1a1a4e; color:#aaa; border:1px solid #4a4a9e !important; }
 </style>
-<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -607,7 +606,11 @@ function drawElection() {
 function handleTap(cx,cy) {
   const rect=canvas.getBoundingClientRect();
   const gx=(cx-rect.left)/scale, gy=(cy-rect.top)/scale;
-  if(G.state==='menu'){ startGame(); return; }
+  if(G.state==='menu'){
+    // Solo iniciar si toca el botón "TOCA PARA EMPEZAR" (centrado en y=410, 210×48px)
+    if(gx>GW/2-105 && gx<GW/2+105 && gy>386 && gy<434) startGame();
+    return;
+  }
   if(G.state==='election'){ if(!G.election.voted) voteElection(); return; }
   if(G.state==='gameover'&&G.goPhase==='board'){
     if(gx>GW/2-95&&gx<GW/2+95&&gy>GH-108&&gy<GH-68) restartGame();
@@ -822,12 +825,4 @@ function loop(ts) {
   } else if(G.state==='gameover'){
     updateShake(dt);
     drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
-    drawGameOver();
-  }
-  ctx.restore();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(t=>{ last=t; requestAnimationFrame(loop); });
-</script>
-</body>
-</html>
+    drawGameOver()
