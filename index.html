@@ -311,9 +311,9 @@ function drawProtesta(x,y,ang){
   ctx.fillStyle='#7A5010'; ctx.fillRect(-2,2,4,32);
   ctx.fillStyle='#FF6B35'; ctx.fillRect(-22,-32,44,30);
   ctx.fillStyle='#FFE135'; ctx.fillRect(-20,-30,40,26);
-  ctx.fillStyle='#CC0000'; ctx.fillRect(-15,-26,30,4); ctx.fillRect(-10,-19,20,4); ctx.fillRect(-12,-12,24,4);
-  ctx.fillStyle=C.skin; ctx.fillRect(-8,-25,16,12); ctx.fillRect(-10,-18,4,6); ctx.fillRect(6,-18,4,6);
-  ctx.fillStyle='#333'; ctx.fillRect(-8,-15,16,2);
+  ctx.fillStyle='#CC0000';
+  ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('BASTA',0,-17);
   ctx.restore();
 }
 function drawTomate(x,y,ang){
@@ -464,12 +464,20 @@ function updateEntities(dt) {
         changeApproval(-data.hitDmg,e.x,e.y);
         shake(data.hitDmg>=25?22:data.hitDmg>20?18:10);
         sfx.hit();
-        if(e.type==='tweet'){ shake(25); burst(DESK_X,DESK_Y,'#FF4444',16,180); }
-        G.presJitter=true; setTimeout(()=>{G.presJitter=false;},300);
+        if(e.type==='tomate'){
+          // ¡SPLAT! — explosión de tomate sobre el presidente
+          burst(DESK_X,DESK_Y,'#EE1111',20,200);
+          burst(DESK_X,DESK_Y,'#FF6666',12,120);
+          addFloat(DESK_X,DESK_Y-50,'💥 ¡SPLAT!','#FF3333');
+          shake(14);
+        } else if(e.type==='tweet'){
+          shake(25); burst(DESK_X,DESK_Y,'#FF4444',16,180);
+        }
+        G.presJitter=true; setTimeout(()=>{G.presJitter=false;},400);
       } else if(e.type==='maletin'){
         changeApproval(-data.missDmg,e.x,e.y);
       }
-      burst(e.x,e.y,TYPES[e.type].color,6); continue;
+      if(e.type!=='tomate') burst(e.x,e.y,TYPES[e.type].color,6); continue;
     }
     if(e.x<-70||e.x>GW+70||e.y<-70||e.y>GH+70) G.entities.splice(i,1);
   }
@@ -835,4 +843,4 @@ function loop(ts) {
 requestAnimationFrame(t=>{ last=t; requestAnimationFrame(loop); });
 </script>
 </body>
-</html>                                                                                                                                                                                                        
+</html>
