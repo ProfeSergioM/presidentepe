@@ -313,17 +313,33 @@ function drawProtesta(x,y,ang){
   ctx.fillStyle='#FFE135'; ctx.fillRect(-20,-30,40,26);
   ctx.fillStyle='#CC0000';
   ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('BASTA',0,-17);
+  ctx.fillText('BASTA!',0,-17);
   ctx.restore();
 }
 function drawTomate(x,y,ang){
   ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
-  ctx.fillStyle='#BB0000'; ctx.fillRect(-15,-13,30,26);
-  ctx.fillStyle=C.tomato; ctx.fillRect(-13,-15,26,28);
-  ctx.fillStyle='#FF5555'; ctx.fillRect(-9,-13,9,9);
-  ctx.fillStyle='#880000'; ctx.fillRect(-11,9,22,6);
-  ctx.fillStyle=C.tomatoLeaf; ctx.fillRect(-9,-20,7,10); ctx.fillRect(-3,-22,6,12); ctx.fillRect(2,-20,7,10);
-  ctx.fillStyle='#2DA52B'; ctx.fillRect(-7,-18,5,7); ctx.fillRect(-1,-20,4,10);
+  // Sombra
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  ctx.beginPath(); ctx.arc(2,3,14,0,Math.PI*2); ctx.fill();
+  // Borde oscuro
+  ctx.fillStyle='#AA0000';
+  ctx.beginPath(); ctx.arc(0,0,15,0,Math.PI*2); ctx.fill();
+  // Cuerpo rojo
+  ctx.fillStyle=C.tomato;
+  ctx.beginPath(); ctx.arc(0,0,13,0,Math.PI*2); ctx.fill();
+  // Brillo
+  ctx.fillStyle='#FF7777';
+  ctx.beginPath(); ctx.arc(-4,-4,5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.25)';
+  ctx.beginPath(); ctx.arc(-5,-5,2.5,0,Math.PI*2); ctx.fill();
+  // Parte inferior más oscura
+  ctx.fillStyle='rgba(100,0,0,0.35)';
+  ctx.beginPath(); ctx.arc(0,3,10,0,Math.PI); ctx.fill();
+  // Hojas
+  ctx.fillStyle=C.tomatoLeaf;
+  ctx.fillRect(-9,-19,6,9); ctx.fillRect(-3,-21,6,11); ctx.fillRect(3,-19,6,9);
+  ctx.fillStyle='#2DA52B';
+  ctx.fillRect(-7,-17,4,7); ctx.fillRect(-1,-19,4,9); ctx.fillRect(5,-17,4,7);
   ctx.restore();
 }
 function drawMaletin(x,y,pulse){
@@ -844,6 +860,40 @@ function drawGameOver() {
     ptext('¡JUGAR DE NUEVO!',GW/2,GH-88,13,C.white);
   }
 }
+
+let last=0;
+function loop(ts) {
+  const dt=Math.min((ts-last)/1000,0.1); last=ts;
+  ctx.save(); ctx.scale(scale,scale); ctx.translate(shakeX,shakeY);
+
+  if(G.state==='menu'){
+    drawMenu();
+  } else if(G.state==='election_confirm'){
+    updateShake(dt); updateParticles(dt);
+    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
+    drawElectionConfirm(); drawParticles();
+  } else if(G.state==='playing'){
+    G.time+=dt;
+    updateDifficulty(); updateShake(dt); updateTweetTimer(dt);
+    G.spawnTimer+=dt;
+    if(G.spawnTimer>=G.spawnInterval){
+      G.spawnTimer=0; spawnEntity();
+      if(G.level>=4&&Math.random()<0.45) spawnEntity();
+      if(G.level>=7&&Math.random()<0.35) spawnEntity();
+    }
+    updateEntities(dt); updateParticles(dt); updateFloats(dt);
+    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,G.presJitter);
+    for(const e of G.entities){
+      ctx.save();
+      if(e.type==='protesta')       drawProtesta(e.x,e.y,e.wobble);
+      else if(e.type==='tomate')    drawTomate(e.x,e.y,e.wobble);
+      else if(e.type==='maletin')   drawMaletin(e.x,e.y,1+Math.sin(e.wt*2)*0.06);
+      else if(e.type==='escandalo') drawEscandalo(e.x,e.y,e.wobble);
+      else if(e.type==='tweet')     drawTweet(e.x,e.y,e.wt);
+      ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(e.x,e.y,e.r+16,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
 
 let last=0;
 function loop(ts) {
