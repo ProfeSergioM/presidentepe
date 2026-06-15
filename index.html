@@ -894,40 +894,6 @@ function loop(ts) {
       ctx.beginPath(); ctx.arc(e.x,e.y,e.r+16,0,Math.PI*2); ctx.stroke();
       ctx.restore();
     }
-
-let last=0;
-function loop(ts) {
-  const dt=Math.min((ts-last)/1000,0.1); last=ts;
-  ctx.save(); ctx.scale(scale,scale); ctx.translate(shakeX,shakeY);
-
-  if(G.state==='menu'){
-    drawMenu();
-  } else if(G.state==='election_confirm'){
-    updateShake(dt); updateParticles(dt);
-    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,false);
-    drawElectionConfirm(); drawParticles();
-  } else if(G.state==='playing'){
-    G.time+=dt;
-    updateDifficulty(); updateShake(dt); updateTweetTimer(dt);
-    G.spawnTimer+=dt;
-    if(G.spawnTimer>=G.spawnInterval){
-      G.spawnTimer=0; spawnEntity();
-      if(G.level>=4&&Math.random()<0.45) spawnEntity();
-      if(G.level>=7&&Math.random()<0.35) spawnEntity();
-    }
-    updateEntities(dt); updateParticles(dt); updateFloats(dt);
-    drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,G.presJitter);
-    for(const e of G.entities){
-      ctx.save();
-      if(e.type==='protesta')       drawProtesta(e.x,e.y,e.wobble);
-      else if(e.type==='tomate')    drawTomate(e.x,e.y,e.wobble);
-      else if(e.type==='maletin')   drawMaletin(e.x,e.y,1+Math.sin(e.wt*2)*0.06);
-      else if(e.type==='escandalo') drawEscandalo(e.x,e.y,e.wobble);
-      else if(e.type==='tweet')     drawTweet(e.x,e.y,e.wt);
-      ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.arc(e.x,e.y,e.r+16,0,Math.PI*2); ctx.stroke();
-      ctx.restore();
-    }
     drawParticles(); drawFloats(); drawHUD();
   } else if(G.state==='election'){
     updateElection(dt); updateShake(dt); updateParticles(dt);
