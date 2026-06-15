@@ -331,12 +331,10 @@ function drawMaletin(x,y,pulse){
   ctx.fillStyle='rgba(255,215,0,0.15)'; ctx.fillRect(-26,-20,52,42);
   ctx.fillStyle='#1A0A00'; ctx.fillRect(-9,-22,18,8); ctx.fillStyle='#2A1010'; ctx.fillRect(-7,-20,14,6);
   ctx.fillStyle=C.briefcase; ctx.fillRect(-24,-14,48,34); ctx.fillStyle='#2A1508'; ctx.fillRect(-22,-12,44,30);
-  ctx.fillStyle=C.briefcaseGold; ctx.fillRect(-7,-3,14,8); ctx.fillStyle='#FFF8DC'; ctx.fillRect(-5,-1,10,4);
-  ctx.fillStyle=C.briefcaseGold; ctx.fillRect(-28,-6,4,12); ctx.fillRect(24,-6,4,12);
-  // Signo sol peruano
+  // Solo el signo $
   ctx.fillStyle=C.briefcaseGold;
-  ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('S/.',0,8);
+  ctx.font='bold 20px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('$',0,5);
   ctx.restore();
 }
 function drawEscandalo(x,y,ang){
@@ -837,4 +835,4 @@ function loop(ts) {
 requestAnimationFrame(t=>{ last=t; requestAnimationFrame(loop); });
 </script>
 </body>
-</html>
+</html>                                                                                                                                                                                                        
