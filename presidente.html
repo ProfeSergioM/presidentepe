@@ -365,30 +365,39 @@ function drawEscandalo(x,y,ang){
 }
 function drawTweet(x,y,wt){
   ctx.save(); ctx.translate(x,y);
-  // Danger glow — pulsing red aura
-  const glow=0.25+Math.sin(wt*8)*0.15;
-  ctx.fillStyle=`rgba(255,50,50,${glow})`; ctx.fillRect(-22,-22,44,44);
+  const W=155, H=44; // mitad del ancho/alto (tarjeta ~310×88px)
 
-  // Black X (Twitter/X brand) background
-  ctx.fillStyle='#000'; ctx.fillRect(-16,-16,32,32);
-  // Inner border
-  ctx.strokeStyle='#333'; ctx.lineWidth=1; ctx.strokeRect(-15,-15,30,30);
+  // Glow rojo pulsante
+  const glow=0.2+Math.sin(wt*6)*0.12;
+  ctx.fillStyle=`rgba(255,30,30,${glow})`; ctx.fillRect(-W-8,-H-8,W*2+16,H*2+16);
 
-  // White X logo — pixel art diagonals
+  // Fondo negro de la tarjeta
+  ctx.fillStyle='#000'; ctx.fillRect(-W,-H,W*2,H*2);
+  // Borde gris sutil
+  ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.strokeRect(-W,-H,W*2,H*2);
+
+  // Logo X (esquina superior izquierda)
   ctx.fillStyle='#FFF';
-  // Top-left → bottom-right stroke
-  for(let i=0;i<5;i++){
-    ctx.fillRect(-10+i*3,-10+i*3,4,4);
-  }
-  // Top-right → bottom-left stroke
-  for(let i=0;i<5;i++){
-    ctx.fillRect(6-i*3,-10+i*3,4,4);
-  }
+  ctx.font='bold 18px monospace'; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('𝕏',  -W+10, -H+8);
 
-  // "¡VIRAL!" badge (red, below)
-  ctx.fillStyle='#FF0000'; ctx.fillRect(-18,18,36,12);
-  ctx.fillStyle='#FFF'; ctx.font='bold 7px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('VIRAL!',0,24);
+  // Nombre usuario
+  ctx.fillStyle='#AAA'; ctx.font='bold 11px monospace'; ctx.textBaseline='middle';
+  ctx.fillText('@datitospe · ahora', -W+36, -H+18);
+
+  // Texto del tweet — grande y amenazante
+  ctx.fillStyle='#FFF'; ctx.font='bold 15px monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('TENGO DATITOS DEL', 0, -6);
+  ctx.fillStyle='#FF4444';
+  ctx.font='bold 17px monospace';
+  ctx.fillText('PRESIDENTE 🧨', 0, 16);
+
+  // Línea separadora inferior
+  ctx.fillStyle='#222'; ctx.fillRect(-W, H-18, W*2, 1);
+  // Íconos like/retweet
+  ctx.fillStyle='#555'; ctx.font='11px monospace'; ctx.textAlign='left';
+  ctx.fillText('🔁 4.2K   ❤️ 18K', -W+10, H-9);
 
   ctx.restore();
 }
@@ -440,15 +449,20 @@ function spawnEntity(forcedType=null) {
   }
   const data=TYPES[chosen];
   let ex,ey;
-  const edge=Math.random();
-  if(edge<0.35){ ex=rnd(40,GW-40); ey=62; }
-  else if(edge<0.68){ ex=28; ey=rnd(80,GH-80); }
-  else { ex=GW-28; ey=rnd(80,GH-80); }
+  if(chosen==='tweet'){
+    // Tweet siempre sube desde abajo, centrado
+    ex=GW/2; ey=GH+50;
+  } else {
+    const edge=Math.random();
+    if(edge<0.35){ ex=rnd(40,GW-40); ey=62; }
+    else if(edge<0.68){ ex=28; ey=rnd(80,GH-80); }
+    else { ex=GW-28; ey=rnd(80,GH-80); }
+  }
   const dx=DESK_X-ex, dy=DESK_Y-ey, d=Math.sqrt(dx*dx+dy*dy);
   const sp = data.speed * (chosen==='tweet' ? 1.0 : G.speedMult);
   G.entities.push({
     type:chosen, x:ex, y:ey, vx:(dx/d)*sp, vy:(dy/d)*sp,
-    r: chosen==='tweet'?13 : chosen==='protesta'?24 : chosen==='escandalo'?26 : chosen==='maletin'?22 : 16,
+    r: chosen==='tweet'?140 : chosen==='protesta'?24 : chosen==='escandalo'?26 : chosen==='maletin'?22 : 16,
     wobble:0, wt:0,
   });
 }
