@@ -170,10 +170,20 @@ const sfx = {
   elecWin:  ()=>{ tone(523,0.12,'square',0.3); tone(659,0.12,'square',0.3,0.13); tone(784,0.12,'square',0.3,0.26); tone(1047,0.35,'square',0.25,0.39); },
   elecLose: ()=>{ tone(370,0.3,'sawtooth',0.3); tone(311,0.3,'sawtooth',0.3,0.32); tone(233,0.55,'sawtooth',0.35,0.64); },
   // Twitter notification "ding" — 3 quick ascending pings
-  tweet: ()=>{ tone(1000,0.04,'square',0.25); tone(1300,0.04,'square',0.25,0.06); tone(1600,0.07,'square',0.3,0.12); },
+  tweet:    ()=>{ tone(1000,0.04,'square',0.25); tone(1300,0.04,'square',0.25,0.06); tone(1600,0.07,'square',0.3,0.12); },
+  aplausos: ()=>{ for(let i=0;i<10;i++) tone(150+Math.random()*600,0.06,'sawtooth',0.04,i*0.05); },
 };
 
 // ── HELPERS ──────────────────────────────────────────
+const DEATH_MSGS=[
+  'Renunció por presión popular',
+  'El Congreso lo vacó',
+  'Huyó en helicóptero',
+  'Cayó en las encuestas',
+  'Corrió a la embajada',
+  'Fue censurado en el pleno',
+  'El pueblo lo sacó a la fuerza',
+];
 function dist(ax,ay,bx,by){ const dx=ax-bx,dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
 function rnd(a,b){ return a+Math.random()*(b-a); }
 function fmt(s){ const m=Math.floor(s/60),sec=Math.floor(s%60); return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
@@ -259,6 +269,11 @@ function drawOffice(){
   drawFlag(25,130);
   drawPlant(24,56); drawPlant(GW-42,56); drawPlant(24,GH-82); drawPlant(GW-42,GH-82);
   ctx.fillStyle=C.gold; ctx.font='18px serif'; ctx.textAlign='center'; ctx.fillText('🇵🇪',GW/2,28);
+  // Manchas de tomate
+  G.stains.forEach(s=>{
+    ctx.fillStyle=`rgba(160,0,0,${s.a})`;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  });
 }
 function drawWindow(x,y){
   ctx.fillStyle=C.windowFrame; ctx.fillRect(x,y,60,36);
@@ -303,6 +318,15 @@ function drawPresident(x,y,jitter=false){
   ctx.fillStyle=C.hair; ctx.fillRect(px-8,py-24,16,5); ctx.fillRect(px-8,py-19,2,3); ctx.fillRect(px+6,py-19,2,3);
   ctx.fillStyle=C.black; ctx.fillRect(px-5,py-18,3,3); ctx.fillRect(px+2,py-18,3,3);
   ctx.fillStyle='#555'; ctx.fillRect(px-3,py-12,6,2);
+  // Sudor según aprobación
+  if(G.approval<60){
+    ctx.fillStyle='rgba(120,200,255,0.85)';
+    const drops=G.approval<25?3:G.approval<40?2:1;
+    for(let i=0;i<drops;i++){
+      const t=(Date.now()/400+i*1.3)%1;
+      ctx.fillRect(px+7+i*4,py-20+t*18,2,4);
+    }
+  }
 }
 
 // ── ENTITY SPRITES ───────────────────────────────────
@@ -429,6 +453,11 @@ const G = {
   tweetTimer: 0,         // separate tweet spawn timer
   tweetWarningTimer: 0,  // flash on screen when tweet spawns
   presJitter: false,
+  combo:0, comboTimer:0,
+  decreto:{timer:120,active:false,timeLeft:0},
+  stains:[],   // manchas de tomate en alfombra
+  scanStains:[], // manchas de escándalo en pantalla
+  deathMsg:'',
   goPhase: 'name',
   lastLBEntry: null,
 };
@@ -463,7 +492,7 @@ function spawnEntity(forcedType=null) {
   G.entities.push({
     type:chosen, x:ex, y:ey, vx:(dx/d)*sp, vy:(dy/d)*sp,
     r: chosen==='tweet'?140 : chosen==='protesta'?24 : chosen==='escandalo'?26 : chosen==='maletin'?22 : 16,
-    wobble:0, wt:0,
+    wobble:0, wt:0, trail:[],
   });
 }
 
@@ -487,6 +516,7 @@ function updateEntities(dt) {
   for(let i=G.entities.length-1;i>=0;i--){
     const e=G.entities[i];
     e.x+=e.vx*dt; e.y+=e.vy*dt; e.wt+=dt*4; e.wobble=Math.sin(e.wt)*0.18;
+    if(e.type==='maletin'){ e.trail.push({x:e.x,y:e.y}); if(e.trail.length>8) e.trail.shift(); }
     if(dist(e.x,e.y,DESK_X,DESK_Y)<52){
       G.entities.splice(i,1);
       const data=TYPES[e.type];
@@ -494,12 +524,14 @@ function updateEntities(dt) {
         changeApproval(-data.hitDmg,e.x,e.y);
         shake(data.hitDmg>=25?22:data.hitDmg>20?18:10);
         sfx.hit();
+        G.combo=0; G.comboTimer=0; // miss resetea combo
         if(e.type==='tomate'){
           // ¡SPLAT! — explosión de tomate sobre el presidente
           burst(DESK_X,DESK_Y,'#EE1111',20,200);
           burst(DESK_X,DESK_Y,'#FF6666',12,120);
           addFloat(DESK_X,DESK_Y-50,'💥 ¡SPLAT!','#FF3333');
           shake(14);
+          G.stains.push({x:DESK_X+rnd(-35,35),y:DESK_Y+rnd(-20,20),r:rnd(10,22),a:rnd(0.4,0.7)});
         } else if(e.type==='tweet'){
           shake(25); burst(DESK_X,DESK_Y,'#FF4444',16,180);
         }
@@ -513,6 +545,18 @@ function updateEntities(dt) {
   }
 }
 
+function updateExtras(dt){
+  // Combo timeout
+  if(G.combo>0){ G.comboTimer-=dt; if(G.comboTimer<=0) G.combo=0; }
+  // Decreto
+  const d=G.decreto;
+  if(!d.active){ d.timer-=dt; if(d.timer<=0){ d.active=true; d.timeLeft=6; d.timer=rnd(90,130); } }
+  else { d.timeLeft-=dt; if(d.timeLeft<=0) d.active=false; }
+  // Scandal stains fade
+  for(let i=G.scanStains.length-1;i>=0;i--){
+    G.scanStains[i].t-=dt; if(G.scanStains[i].t<=0) G.scanStains.splice(i,1);
+  }
+}
 function updateDifficulty() {
   const lv=Math.floor(G.time/18)+1; // level every 18s ★ faster
   if(lv!==G.level){
@@ -615,7 +659,9 @@ function updateElection(dt) {
         G.tweetTimer=rnd(6,11); // reset tweet timer after election
       } else { triggerGameOver(); }
     }
-    if(e.result==='win') burst(rnd(40,GW-40),rnd(120,GH-120),Math.random()>.5?C.gold:'#00FF88',3,80);
+    if(e.result==='win'){
+      burst(rnd(30,GW-30),rnd(80,GH-150),['#FFD700','#00FF88','#FF6B35','#FF3333','#FFFFFF'][Math.floor(Math.random()*5)],4,100);
+    }
     return;
   }
   e.trail.push(e.pos);
@@ -732,7 +778,7 @@ function handleTap(cx,cy) {
 function voteElection() {
   const e=G.election; if(e.voted) return;
   e.voted=true; e.result=e.pos>=e.threshold?'win':'lose';
-  if(e.result==='win'){ sfx.elecWin(); burst(GW/2,GH/2,C.gold,20,200); }
+  if(e.result==='win'){ sfx.elecWin(); sfx.aplausos(); burst(GW/2,GH/2,C.gold,20,200); burst(GW/2,GH/2,'#00FF88',12,150); }
   else { sfx.elecLose(); shake(20); burst(GW/2,GH/2,C.red,16,160); }
 }
 
@@ -745,7 +791,11 @@ function startGame() {
   G.entities.length=0; G.spawnTimer=0; G.spawnInterval=0.85;
   G.speedMult=1.0; G.level=1; G.lastElectionLevel=0;
   G.electionRound=0; G.election=null; G.presJitter=false;
-  G.tweetTimer=rnd(20,30); G.tweetWarningTimer=0; // primer tweet más tarde
+  G.tweetTimer=rnd(20,30); G.tweetWarningTimer=0;
+  G.combo=0; G.comboTimer=0;
+  G.decreto={timer:120,active:false,timeLeft:0};
+  G.stains=[]; G.scanStains=[];
+  G.deathMsg=DEATH_MSGS[Math.floor(Math.random()*DEATH_MSGS.length)]; // primer tweet más tarde
   floats.length=0; particles.length=0;
 }
 function restartGame(){ hideNameOverlay(); startGame(); }
@@ -780,6 +830,24 @@ function drawHUD() {
   ctx.strokeStyle=C.gold; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
   ptext(`${Math.ceil(G.approval)}%`,GW/2,by+bh/2,13,C.white);
   // Tweet warning flash
+  // Manchas escándalo
+  G.scanStains.forEach(s=>{
+    ctx.save(); ctx.globalAlpha=Math.min(0.45,s.t/4*0.45);
+    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+  // Decreto button
+  if(G.decreto.active){
+    const dbx=GW-60,dby=GH-90,pulse=0.95+Math.sin(Date.now()/150)*0.05;
+    ctx.save(); ctx.translate(dbx,dby); ctx.scale(pulse,pulse);
+    ctx.fillStyle='#004400'; ctx.fillRect(-38,-22,76,44);
+    ctx.strokeStyle='#00FF44'; ctx.lineWidth=2; ctx.strokeRect(-38,-22,76,44);
+    ctx.restore();
+    ptext('📜',dbx,dby-4,16,C.white);
+    ptext(`${Math.ceil(G.decreto.timeLeft)}s`,dbx,dby+12,9,'#00FF44');
+  }
+  // Combo display
+  if(G.combo>=2) ptext(`⚡x${G.combo}`,GW/2,54,13,G.combo>=5?'#FF4444':C.gold);
   if(G.tweetWarningTimer>0){
     const a=G.tweetWarningTimer/1.2*0.35;
     ctx.fillStyle=`rgba(255,0,0,${a})`; ctx.fillRect(0,0,GW,GH);
@@ -851,7 +919,8 @@ function drawGameOver() {
   ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🏛️💥',GW/2,118);
   ptext('DURASTE EN EL PODER:',GW/2,158,11,'#ccc');
   ptext(fmt(G.time),GW/2,188,32,C.gold);
-  ptext(`PUNTOS: ${G.score}`,GW/2,220,12,C.white);
+  ptext(G.deathMsg||'El poder tiene un límite',GW/2,212,10,'#888');
+  ptext(`PUNTOS: ${G.score}`,GW/2,232,12,C.white);
   ptext(`LVL ${G.level} · Elecciones ronda ${G.electionRound}`,GW/2,240,9,'#777');
   if(G.goPhase==='name'){
     ptext('↓ INGRESA TU NOMBRE ↓',GW/2,270,11,C.gold);
@@ -888,12 +957,13 @@ function loop(ts) {
     drawElectionConfirm(); drawParticles();
   } else if(G.state==='playing'){
     G.time+=dt;
-    updateDifficulty(); updateShake(dt); updateTweetTimer(dt);
+    updateDifficulty(); updateShake(dt); updateTweetTimer(dt); updateExtras(dt);
     G.spawnTimer+=dt;
     if(G.spawnTimer>=G.spawnInterval){
       G.spawnTimer=0; spawnEntity();
       if(G.level>=4&&Math.random()<0.45) spawnEntity();
       if(G.level>=7&&Math.random()<0.35) spawnEntity();
+      if(G.level>=8&&Math.random()<0.28){ setTimeout(()=>{if(G.state==='playing'){spawnEntity();spawnEntity();}},200); addFloat(GW/2,GH/2-80,'📦 ¡PAQUETAZO!','#FF6B35'); }
     }
     updateEntities(dt); updateParticles(dt); updateFloats(dt);
     drawOffice(); drawDesk(DESK_X,DESK_Y); drawPresident(DESK_X,DESK_Y-28,G.presJitter);
@@ -901,7 +971,10 @@ function loop(ts) {
       ctx.save();
       if(e.type==='protesta')       drawProtesta(e.x,e.y,e.wobble);
       else if(e.type==='tomate')    drawTomate(e.x,e.y,e.wobble);
-      else if(e.type==='maletin')   drawMaletin(e.x,e.y,1+Math.sin(e.wt*2)*0.06);
+      else if(e.type==='maletin'){
+        e.trail.forEach((p,i)=>{ ctx.globalAlpha=(i/e.trail.length)*0.25; ctx.fillStyle=C.gold; ctx.fillRect(p.x-4,p.y-4,8,8); }); ctx.globalAlpha=1;
+        drawMaletin(e.x,e.y,1+Math.sin(e.wt*2)*0.06);
+      }
       else if(e.type==='escandalo') drawEscandalo(e.x,e.y,e.wobble);
       else if(e.type==='tweet')     drawTweet(e.x,e.y,e.wt);
       ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
